@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 2.8)
 
 # ALL OF THE SPECIFIED NAMES IN THIS CMAKE ARE REQUIRED.
 # Set the project name variable to hw2.
