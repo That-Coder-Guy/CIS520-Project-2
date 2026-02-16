@@ -83,17 +83,18 @@ dyn_array_t* load_process_control_blocks(const char *input_file)
 	int fd = open(input_file, O_RDONLY);
 	if (fd == -1) { return NULL; }
 
-	// Calcualte file payload size then read it to a dynamic array
+	// Calcualte file payload size then read payload to a dynamic array
 	dyn_array_t* control_blocks = NULL;
 	uint32_t control_block_count = 0;
 	if (read_file_value(fd, &control_block_count, sizeof(uint32_t)) && control_block_count > 0) // Read first 4 bytes for control block count
 	{
-		// Allocate a temperary storage array for the control blocks and read them into it
+		// Allocate a storage array for the control blocks and read them into it
 		control_blocks = dyn_array_create(control_block_count, sizeof(ProcessControlBlock_t), NULL);
 		if (control_blocks != NULL)
 		{
 			for (uint32_t i = 0; i < control_block_count; i++)
 			{
+				// Allocate a control block struct to store the incoming data
 				ProcessControlBlock_t* block = malloc(sizeof(ProcessControlBlock_t));
 				if (block != NULL &&
 					read_file_value(fd, &(block->remaining_burst_time), sizeof(uint32_t)) &&
