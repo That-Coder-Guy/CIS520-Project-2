@@ -48,76 +48,76 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 	return false;
 }
 
-dyn_array_t *load_process_control_blocks(const char *input_file) 
+static bool read_file_value(int fd, void* value, size_t count)
+{
+	// Validate input values
+	if (fd == -1 || value == NULL) { return false; }
+
+	// Loop and read until the requested number of bytes are read to the buffer
+	uint8_t* value_bytes = (uint8_t*)value;
+	size_t bytes_to_read = count;
+	size_t total_bytes_read = 0;
+	while (bytes_to_read > 0)
+	{	
+		// Request the kernel to read up to the specified number of bytes from the file descriptor
+		ssize_t bytes_read = read(fd, value_bytes + total_bytes_read, bytes_to_read);
+		if (bytes_read > 0)
+		{
+			bytes_to_read -= bytes_read;
+			total_bytes_read += bytes_read;
+		}
+		// If the read is stopped because of an interrupt ignore it
+		else if (bytes_read == -1 && errno == EINTR) { continue; }
+		// If the read fails return false
+		else { return false; }
+	}
+	return true;
+}
+
+dyn_array_t* load_process_control_blocks(const char *input_file) 
 {
 	// Validate input value
-	if (input_file == NULL) { return NULL; }
+	if (input_file == NULL || input_file[0] == '\0' || (input_file[0] == '\n' && input_file[1] == '\0')) { return NULL; }
 
 	// Acquire input file descriptor
 	int fd = open(input_file, O_RDONLY);
 	if (fd == -1) { return NULL; }
 
-	// Create a variable to store the number of control blocks in the input file
+	// Calcualte file payload size then read it to a dynamic array
+	dyn_array_t* control_blocks = NULL;
 	uint32_t control_block_count = 0;
-	uint8_t* count_bytes = (uint8_t*)&control_block_count; // Read friendly pointer
-
-	// Determine the number of control blocks in the input file by reading the first 4 bytes
-	size_t bytes_to_read = sizeof(uint32_t);
-	size_t total_bytes_read = 0;
-	while (bytes_to_read > 0)
+	if (read_file_value(fd, &control_block_count, sizeof(uint32_t)) && control_block_count > 0) // Read first 4 bytes for control block count
 	{
-		ssize_t bytes_read = read(fd, count_bytes + total_bytes_read, bytes_to_read);
-		if (bytes_read > 0)
+		// Allocate a temperary storage array for the control blocks and read them into it
+		control_blocks = dyn_array_create(control_block_count, sizeof(ProcessControlBlock_t), NULL);
+		if (control_blocks != NULL)
 		{
-			bytes_to_read -= bytes_read;
-			total_bytes_read += bytes_read;
-		}
-		else if (bytes_read == -1 && errno == EINTR) { continue; }
-		else
-		{
-			close(fd);
-			return NULL;
+			for (uint32_t i = 0; i < control_block_count; i++)
+			{
+				ProcessControlBlock_t* block = malloc(sizeof(ProcessControlBlock_t));
+				if (block != NULL &&
+					read_file_value(fd, &(block->remaining_burst_time), sizeof(uint32_t)) &&
+					read_file_value(fd, &(block->priority), sizeof(uint32_t)) &&
+					read_file_value(fd, &(block->arrival), sizeof(uint32_t))
+				) 
+				{
+					block->started = false;
+					dyn_array_push_back(control_blocks, block);
+				}
+				else
+				{
+					dyn_array_destroy(control_blocks);
+					control_blocks = NULL;
+					break;
+				}
+			}
 		}
 	}
-
-	// Allocate a storage array for the control blocks and read them from the input file
-	size_t input_size = sizeof(ProcessControlBlock_t) * control_block_count;
-	ProcessControlBlock_t* control_block_buffer = malloc(input_size);
-	if (control_block_buffer == NULL)
-	{
-		close(fd);
-		return NULL;
-	}
-
-	// Read all the control blocks into the storage array from the input file
-	uint8_t* buffer_bytes = (uint8_t*)control_block_buffer;
-	bytes_to_read = input_size;
-	total_bytes_read = 0;
-	while (bytes_to_read > 0)
-	{
-		ssize_t bytes_read = read(fd, buffer_bytes + total_bytes_read, bytes_to_read);
-		if (bytes_read > 0)
-		{
-			bytes_to_read -= bytes_read;
-			total_bytes_read += bytes_read;
-		}
-		else if (bytes_read == -1 && errno == EINTR) { continue; }
-		else
-		{
-			free(control_block_buffer);
-			close(fd);
-			return NULL;
-		}
-	}
-
-	// Transfer the control blocks to a dynamic array and free the temperary buffer
-	dyn_array_t* control_blocks = dyn_array_import(control_block_buffer, control_block_count, sizeof(ProcessControlBlock_t), NULL);
-	free(control_block_buffer);
 
 	// Close the file
 	close(fd);
 
-	// Return control blocks
+	// Return the control blocks
 	return control_blocks;
 }
 

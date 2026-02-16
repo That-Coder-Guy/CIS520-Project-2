@@ -12,18 +12,18 @@
 
 	typedef struct
 	{
-		uint32_t remaining_burst_time;// the remaining burst of the pcb
+		uint32_t remaining_burst_time;	// The remaining burst of the pcb
 		uint32_t priority;				// The priority of the task
-		uint32_t arrival;					// Time the process arrived in the ready queue
-		bool started;						// If it has been activated on virtual CPU
+		uint32_t arrival;				// Time the process arrived in the ready queue
+		bool started;					// If it has been activated on virtual CPU
 	} 
 	ProcessControlBlock_t;
 
 	typedef struct
 	{
-		float average_waiting_time;	// the average waiting time in the ready queue until first schedue on the cpu
-		float average_turnaround_time;// the average completion time of the PCBs
-		unsigned long total_run_time;	// the total time to process all the PCBs in the ready queue
+		float average_waiting_time;		// The average waiting time in the ready queue until first schedue on the cpu
+		float average_turnaround_time;	// The average completion time of the PCBs
+		unsigned long total_run_time;	// The total time to process all the PCBs in the ready queue
 	} 
 	ScheduleResult_t;
 
