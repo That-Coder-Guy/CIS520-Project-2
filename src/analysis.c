@@ -42,45 +42,40 @@ int main(int argc, char **argv)
 
 	// Call the correct scheduling algorithm on the provided file schedule data
 	static const int MAX_ALGORITHM_NAME_LENGTH = 5;
+	bool success = false;
 	switch (strnlen(algorithm_name, MAX_ALGORITHM_NAME_LENGTH))
 	{	
 		case 1:
 			if (strncmp(algorithm_name, P, 1) == 0)
 			{
-				priority(schedule, result);
-				return EXIT_SUCCESS;
+				success = priority(schedule, result);
 			}
         	break;
 		
 		case 2:
 			if (strncmp(algorithm_name, RR, 2) == 0)
 			{
-				if (quantum == 0) { return EXIT_FAILURE; }
-				round_robin(schedule, result, quantum);
-				return EXIT_SUCCESS;
+				if (quantum > 0) { success = round_robin(schedule, result, quantum); }
 			}
         	break;
 
 		case 3:
 			if (strncmp(algorithm_name, SJF, 3) == 0)
 			{
-				shortest_job_first(schedule, result);
-				return EXIT_SUCCESS;
+				success = shortest_job_first(schedule, result);
 			}
 			else if (strncmp(algorithm_name, SRT, 3) == 0)
 			{
-				shortest_remaining_time_first(schedule, result);
-				return EXIT_SUCCESS;
+				success = shortest_remaining_time_first(schedule, result);
 			}
 			break;
 
 		case 4:
 			if (strncmp(algorithm_name, FCFS, 4) == 0)
 			{
-				first_come_first_serve(schedule, result);
-				return EXIT_SUCCESS;
+				success = first_come_first_serve(schedule, result);
 			}
 			break;
 	}
-	return EXIT_FAILURE;
+	return success;
 }
