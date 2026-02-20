@@ -11,3 +11,11 @@ You can manually copy the time analysis from console and paste it to this file, 
 ---------------------------------------------------------------------------
 Add your scheduling algorithm analysis below this line in a readable format.
 ---------------------------------------------------------------------------
+## Scheduling Algorithm Analysis
+| Scheduling Algorithm | Average Waiting Time | Average Turnaround Time | Total Run Time |
+|-----|-----|-----|-----|
+| `first_come_first_serve ` | `16.000000` | `28.500000` | `50` |
+| `shortest_job_first` | `NULL` | `NULL` | `NULL` |
+| `priority` | `NULL` | `NULL` | `NULL` |
+| `round_robin` | `NULL` | `NULL` | `NULL` |
+| `shortest_remaining_time_first` | `NULL` | `NULL` | `NULL` |

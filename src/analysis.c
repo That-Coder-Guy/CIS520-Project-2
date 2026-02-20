@@ -13,6 +13,7 @@
 #define SJF "SJF"
 #define SRT "SRT"
 
+
 // Add and comment your analysis code in this function.
 // THIS IS NOT FINISHED.
 int main(int argc, char **argv) 
@@ -78,11 +79,12 @@ int main(int argc, char **argv)
 			break;
 	}
 
-	if (success) {
-		printf("Average waiting time: %f\n", result->average_waiting_time);
-		printf("Average turnaround time: %f\n", result->average_turnaround_time);
-		printf("Total run time: %ld\n", result->total_run_time);
+	if (success)
+	{
+		printf("Average Waiting Time:\t %f\n", result->average_waiting_time);
+		printf("Average Turnaround Time: %f\n", result->average_turnaround_time);
+		printf("Total Run Time:\t\t %ld\n", result->total_run_time);
 	}
 
-	return success;
+	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

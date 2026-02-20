@@ -104,6 +104,13 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 	return false;
 }
 
+bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+{
+	UNUSED(ready_queue);
+	UNUSED(result);
+	return false;
+}
+
 static bool read_file_value(int fd, void* value, size_t count)
 {
 	// Validate input values
@@ -114,7 +121,7 @@ static bool read_file_value(int fd, void* value, size_t count)
 	size_t bytes_to_read = count;
 	size_t total_bytes_read = 0;
 	while (bytes_to_read > 0)
-	{	
+	{
 		// Request the kernel to read up to the specified number of bytes from the file descriptor
 		ssize_t bytes_read = read(fd, value_bytes + total_bytes_read, bytes_to_read);
 		if (bytes_read > 0)
@@ -130,7 +137,7 @@ static bool read_file_value(int fd, void* value, size_t count)
 	return true;
 }
 
-dyn_array_t* load_process_control_blocks(const char *input_file) 
+dyn_array_t* load_process_control_blocks(const char* input_file)
 {
 	// Validate input value
 	if (input_file == NULL || input_file[0] == '\0' || (input_file[0] == '\n' && input_file[1] == '\0')) { return NULL; }
@@ -156,7 +163,7 @@ dyn_array_t* load_process_control_blocks(const char *input_file)
 					read_file_value(fd, &(block->remaining_burst_time), sizeof(uint32_t)) &&
 					read_file_value(fd, &(block->priority), sizeof(uint32_t)) &&
 					read_file_value(fd, &(block->arrival), sizeof(uint32_t))
-				) 
+					)
 				{
 					block->started = false;
 					dyn_array_push_back(control_blocks, block);
@@ -176,11 +183,4 @@ dyn_array_t* load_process_control_blocks(const char *input_file)
 
 	// Return the control blocks
 	return control_blocks;
-}
-
-bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
-{
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
 }
