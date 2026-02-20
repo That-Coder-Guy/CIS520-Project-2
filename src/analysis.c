@@ -24,13 +24,13 @@ int main(int argc, char **argv)
 	}
 
 	// Assign and validate argument values
-	char* filename = argv[0];
-	char* algorithm_name = argv[1];
+	char* filename = argv[1];
+	char* algorithm_name = argv[2];
 	if (filename == NULL || algorithm_name == NULL) { return EXIT_FAILURE; }
 
 	// Assign optional argument
 	size_t quantum = 0;
-	if (argc > 3 && sscanf(argv[2], "%zu", &quantum) <= 0) { return EXIT_FAILURE; }
+	if (argc > 3 && sscanf(argv[3], "%zu", &quantum) <= 0) { return EXIT_FAILURE; }
 
 	// Extract schedule data from the provided file
 	dyn_array_t* schedule = load_process_control_blocks(filename);
@@ -77,5 +77,12 @@ int main(int argc, char **argv)
 			}
 			break;
 	}
+
+	if (success) {
+		printf("Average waiting time: %f\n", result->average_waiting_time);
+		printf("Average turnaround time: %f\n", result->average_turnaround_time);
+		printf("Total run time: %ld\n", result->total_run_time);
+	}
+
 	return success;
 }
