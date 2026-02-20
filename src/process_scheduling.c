@@ -19,11 +19,67 @@ void virtual_cpu(ProcessControlBlock_t *process_control_block)
 	--process_control_block->remaining_burst_time;
 }
 
+// Runs First Come First Served algorithm
+// param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
+// param: result - Result used for stat tracking
+// return: True if function ran successful, false otherwise
 bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result) 
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	// Checks invalid parameters
+	if(ready_queue == NULL || !result) 
+	{
+		return false;
+	}
+	// gets number of processes
+	size_t num_processes = dyn_array_size(ready_queue); 
+	if(num_processes == 0)
+	{
+		return false;
+	}
+	unsigned long current_time = 0;
+	unsigned long total_waiting = 0;
+	unsigned long total_turnaround = 0;
+	
+	// For each process to go through
+	for(size_t i = 0; i < num_processes; i++)
+	{
+			
+		ProcessControlBlock_t *pcb = (ProcessControlBlock_t *)dyn_array_at(ready_queue, i);
+		if (!pcb) 
+		{
+			return false;
+		}
+		
+		// Iterates through time until process arrives
+		if (current_time < pcb->arrival) 
+		{
+			current_time = pcb->arrival;
+		}
+		
+		// Time spent in queue until process started
+		unsigned long waiting_time = current_time - pcb->arrival;
+		total_waiting += waiting_time;
+		
+		// Process has started
+		pcb->started = true;
+		
+		// Execute process until completion
+		while (pcb->remaining_burst_time > 0) 
+		{
+			virtual_cpu(pcb);  // Decrement remaining burst time by 1
+			current_time++;
+		}
+		
+		// Calculate time from arrival to completion
+		unsigned long turnaround_time = current_time - pcb->arrival;
+		total_turnaround += turnaround_time;
+	}
+	
+	result->average_waiting_time = (float)total_waiting / num_processes;
+	result->average_turnaround_time = (float)total_turnaround / num_processes;
+	result->total_run_time = current_time;
+
+	return true;
 }
 
 bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
