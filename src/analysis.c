@@ -18,6 +18,7 @@
 // THIS IS NOT FINISHED.
 int main(int argc, char **argv) 
 {
+	// Ensure the correct number of arguments are present
 	if (argc < 3) 
 	{
 		printf("%s <pcb file> <schedule algorithm> [quantum]\n", argv[0]);
@@ -79,6 +80,7 @@ int main(int argc, char **argv)
 			break;
 	}
 
+	// Display the scheduler algorithm's result statistics to the console
 	if (success)
 	{
 		printf("Average Waiting Time:\t %f\n", result->average_waiting_time);
