@@ -111,19 +111,24 @@ bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *r
 	return false;
 }
 
-static bool read_file_value(int fd, void* value, size_t count)
+// Reads a specified number of bytes from an open file descriptor into a destination buffer.
+// \param fd the open file descriptor to read from
+// \param buffer a pointer to the destination buffer where the data will be stored
+// \param count the number of bytes to read from the file
+// \return true if the requested number of bytes was successfully read, else false on error
+static bool read_file_bytes(int fd, void* buffer, size_t count)
 {
 	// Validate input values
-	if (fd == -1 || value == NULL) { return false; }
+	if (fd == -1 || buffer == NULL) { return false; }
 
 	// Loop and read until the requested number of bytes are read to the buffer
-	uint8_t* value_bytes = (uint8_t*)value;
+	uint8_t* buffer_bytes = (uint8_t*)buffer;
 	size_t bytes_to_read = count;
 	size_t total_bytes_read = 0;
 	while (bytes_to_read > 0)
 	{
 		// Request the kernel to read up to the specified number of bytes from the file descriptor
-		ssize_t bytes_read = read(fd, value_bytes + total_bytes_read, bytes_to_read);
+		ssize_t bytes_read = read(fd, buffer_bytes + total_bytes_read, bytes_to_read);
 		if (bytes_read > 0)
 		{
 			bytes_to_read -= bytes_read;
@@ -137,6 +142,10 @@ static bool read_file_value(int fd, void* value, size_t count)
 	return true;
 }
 
+// Reads the PCB values from the binary file into ProcessControlBlock_t
+// for N number of PCB entries stored in the file
+// \param input_file the file containing the PCB burst times
+// \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
 dyn_array_t* load_process_control_blocks(const char* input_file)
 {
 	// Validate input value
@@ -149,7 +158,7 @@ dyn_array_t* load_process_control_blocks(const char* input_file)
 	// Calcualte file payload size then read payload to a dynamic array
 	dyn_array_t* control_blocks = NULL;
 	uint32_t control_block_count = 0;
-	if (read_file_value(fd, &control_block_count, sizeof(uint32_t)) && control_block_count > 0) // Read first 4 bytes for control block count
+	if (read_file_bytes(fd, &control_block_count, sizeof(uint32_t)) && control_block_count > 0) // Read first 4 bytes for control block count
 	{
 		// Allocate a storage array for the control blocks and read them into it
 		control_blocks = dyn_array_create(control_block_count, sizeof(ProcessControlBlock_t), NULL);
@@ -160,9 +169,9 @@ dyn_array_t* load_process_control_blocks(const char* input_file)
 				// Allocate a control block struct to store the incoming data
 				ProcessControlBlock_t* block = malloc(sizeof(ProcessControlBlock_t));
 				if (block != NULL &&
-					read_file_value(fd, &(block->remaining_burst_time), sizeof(uint32_t)) &&
-					read_file_value(fd, &(block->priority), sizeof(uint32_t)) &&
-					read_file_value(fd, &(block->arrival), sizeof(uint32_t))
+					read_file_bytes(fd, &(block->remaining_burst_time), sizeof(uint32_t)) &&
+					read_file_bytes(fd, &(block->priority), sizeof(uint32_t)) &&
+					read_file_bytes(fd, &(block->arrival), sizeof(uint32_t))
 					)
 				{
 					block->started = false;
