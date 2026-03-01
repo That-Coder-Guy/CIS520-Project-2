@@ -35,6 +35,9 @@ class GradeEnvironment : public testing::Environment
 };
 */
 
+/*
+*  FIRST COME FIRST SERVER UNIT TEST CASES
+**/
 TEST(FCFS, SingleProcess)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -201,7 +204,7 @@ TEST(FCFS, LargeGapBetweenArrival)
 }
 
 /*
-*  LOAD PROCESS CONTROL BLOCKS UNIT TEST CASES
+*  PRIORITY UNIT TEST CASES
 **/
 TEST(priority, NullReadyQueue) {
 	ScheduleResult_t result;
@@ -225,7 +228,7 @@ TEST(priority, EmptyReadyQueue)
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ScheduleResult_t result;
 
-	EXPECT_FALSE(first_come_first_serve(ready_queue, &result));
+	EXPECT_FALSE(priority(ready_queue, &result));
 
 	dyn_array_destroy(ready_queue);
 }
@@ -289,6 +292,97 @@ TEST(priority, LargeReadyQueue) {
     EXPECT_NEAR(result.average_waiting_time, 6.0f, 0.01);
     EXPECT_NEAR(result.average_turnaround_time, 9.25f, 0.01);
     EXPECT_EQ(result.total_run_time, 26UL);
+}
+
+/*
+*  SHORTEST TIME REMAINING FIRST UNIT TEST CASES
+**/
+TEST(shortest_remaining_time_first, NullReadyQueue) {
+	ScheduleResult_t result;
+	EXPECT_FALSE(shortest_remaining_time_first(NULL, &result));
+}
+
+TEST(shortest_remaining_time_first, NullScheduleResult) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = 10, .priority = 0, .arrival = 5, .started = false },
+		{ .remaining_burst_time = 10, .priority = 1, .arrival = 6, .started = false }
+	};
+	dyn_array_t* ready_queue = dyn_array_import(data, 2, sizeof(ProcessControlBlock_t), NULL);
+
+	EXPECT_FALSE(shortest_remaining_time_first(ready_queue, NULL));
+
+	dyn_array_destroy(ready_queue);
+}
+
+TEST(shortest_remaining_time_first, EmptyReadyQueue)
+{
+	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
+	ScheduleResult_t result;
+
+	EXPECT_FALSE(shortest_remaining_time_first(ready_queue, &result));
+
+	dyn_array_destroy(ready_queue);
+}
+
+TEST(shortest_remaining_time_first, ValidReadyQueueData) {
+    ProcessControlBlock_t data[] = {
+        { .remaining_burst_time = 8, .priority = 0, .arrival = 0, .started = false },
+        { .remaining_burst_time = 4, .priority = 0, .arrival = 1, .started = false },
+        { .remaining_burst_time = 9, .priority = 0, .arrival = 2, .started = false },
+        { .remaining_burst_time = 5, .priority = 0, .arrival = 3, .started = false }
+    };
+    dyn_array_t* ready_queue = dyn_array_import(data, 4, sizeof(ProcessControlBlock_t), NULL);
+    ScheduleResult_t result;
+
+    EXPECT_TRUE(shortest_remaining_time_first(ready_queue, &result));
+
+    dyn_array_destroy(ready_queue);
+
+    EXPECT_NEAR(result.average_waiting_time, 6.5f, 0.01); 
+    EXPECT_NEAR(result.average_turnaround_time, 13.0f, 0.01);
+    EXPECT_EQ(result.total_run_time, 26UL);
+}
+
+TEST(shortest_remaining_time_first, IdenticalTimeRemainingAndArrival) {
+    ProcessControlBlock_t data[] = {
+        { .remaining_burst_time = 10, .priority = 0, .arrival = 0, .started = false },
+        { .remaining_burst_time = 2,  .priority = 0, .arrival = 2, .started = false },
+        { .remaining_burst_time = 2,  .priority = 0, .arrival = 2, .started = false },
+        { .remaining_burst_time = 1,  .priority = 0, .arrival = 5, .started = false }
+    };
+    dyn_array_t* ready_queue = dyn_array_import(data, 4, sizeof(ProcessControlBlock_t), NULL);
+    ScheduleResult_t result;
+
+    EXPECT_TRUE(shortest_remaining_time_first(ready_queue, &result));
+
+    dyn_array_destroy(ready_queue);
+
+    EXPECT_NEAR(result.average_waiting_time, 2.0f, 0.01);
+    EXPECT_NEAR(result.average_turnaround_time, 5.75f, 0.01);
+    EXPECT_EQ(result.total_run_time, 15UL);
+}
+
+TEST(shortest_remaining_time_first, LargeReadyQueueWithIdleTime) {
+    ProcessControlBlock_t data[] = {
+        { .remaining_burst_time = 3, .priority = 0, .arrival = 0,  .started = false },
+        { .remaining_burst_time = 2, .priority = 0, .arrival = 1,  .started = false },
+        { .remaining_burst_time = 1, .priority = 0, .arrival = 2,  .started = false },
+        { .remaining_burst_time = 4, .priority = 0, .arrival = 3,  .started = false },
+        { .remaining_burst_time = 2, .priority = 0, .arrival = 4,  .started = false },
+        { .remaining_burst_time = 1, .priority = 0, .arrival = 5,  .started = false },
+        { .remaining_burst_time = 2, .priority = 0, .arrival = 15, .started = false },
+        { .remaining_burst_time = 2, .priority = 0, .arrival = 15, .started = false }
+    };
+    dyn_array_t* ready_queue = dyn_array_import(data, 8, sizeof(ProcessControlBlock_t), NULL);
+    ScheduleResult_t result;
+
+    EXPECT_TRUE(shortest_remaining_time_first(ready_queue, &result));
+
+    dyn_array_destroy(ready_queue);
+
+    EXPECT_NEAR(result.average_waiting_time, 2.0f, 0.01);
+    EXPECT_NEAR(result.average_turnaround_time, 4.125f, 0.01);
+    EXPECT_EQ(result.total_run_time, 19UL); 
 }
 
 /*

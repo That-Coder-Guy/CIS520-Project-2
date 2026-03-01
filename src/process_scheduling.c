@@ -25,7 +25,7 @@ void virtual_cpu(ProcessControlBlock_t *process_control_block)
 // \param: current_time - The current simulated CPU time used to determine process eligibility
 // \param: object - A pointer to the destination where the extracted process block will be stored
 // \return: True if a process was successfully selected and extracted, false otherwise
-typedef bool (*process_selector_function_t)(dyn_array_t* ready_queue, unsigned long current_time, void *const object);
+typedef bool (*process_selector_function_t)(dyn_array_t* ready_queue, unsigned long current_time, ProcessControlBlock_t* const process);
 
 // Simulates a non-preemptive CPU scheduler by executing processes from the ready queue to completion using a provided selection algorithm
 // \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing the processes to be scheduled
@@ -48,20 +48,20 @@ static bool nonpreemptive_scheduler(dyn_array_t* ready_queue, ScheduleResult_t* 
 	while (!dyn_array_empty(ready_queue))
 	{
 		// Select the next process to run
-		ProcessControlBlock_t process;
-		if (!selector(ready_queue, current_time, &process)) { return false; }
+		ProcessControlBlock_t target_process;
+		if (!selector(ready_queue, current_time, &target_process)) { return false; }
 
 		// Skip to the arrival time if needed
-		if (current_time < process.arrival) { current_time = process.arrival; }
-		else { total_waiting += current_time - process.arrival; }
+		if (current_time < target_process.arrival) { current_time = target_process.arrival; }
+		else { total_waiting += current_time - target_process.arrival; }
 
 		// If a process was found then run it to completion
-		while (process.remaining_burst_time > 0)
+		while (target_process.remaining_burst_time > 0)
 		{
-			virtual_cpu(&process);
+			virtual_cpu(&target_process);
 			current_time++;
 		}
-		total_turnaround += current_time - process.arrival;
+		total_turnaround += current_time - target_process.arrival;
 	}
 
 	// Set the result values
@@ -77,28 +77,28 @@ static bool nonpreemptive_scheduler(dyn_array_t* ready_queue, ScheduleResult_t* 
 // \param: current_time - The current simulated CPU time used to determine process eligibility
 // \param: object - A pointer to the destination where the extracted process block will be stored
 // \return: True if the extraction was successful, false otherwise
-static bool select_next_arrival(dyn_array_t* ready_queue, unsigned long current_time, void *const object)
+static bool select_earliest_arrival(dyn_array_t* ready_queue, unsigned long current_time, ProcessControlBlock_t* const process)
 {
 	// Mark current_time as intentionally unused for the compiler
 	(void)current_time;
 
 	// Validate input values
-	if (ready_queue == NULL || dyn_array_empty(ready_queue) || object == NULL) { return false; }
+	if (ready_queue == NULL || dyn_array_empty(ready_queue) || process == NULL) { return false; }
 	
 	// Find the process with the earliest arrival time
-	size_t earliest_arrival = 0;
+	size_t prime_candidate_index = 0;
 	for (size_t i = 1; i < dyn_array_size(ready_queue); i++)
 	{
-		ProcessControlBlock_t* eariest_process = dyn_array_at(ready_queue, earliest_arrival);
+		ProcessControlBlock_t* prime_candidate_process = dyn_array_at(ready_queue, prime_candidate_index);
 		ProcessControlBlock_t* candidate_process = dyn_array_at(ready_queue, i);
-		if (eariest_process->arrival > candidate_process->arrival)
+		if (prime_candidate_process->arrival > candidate_process->arrival)
 		{
-			earliest_arrival = i;
+			prime_candidate_index = i;
 		}
 	}
 
 	// Store the selected process in the memory location provided
-	dyn_array_extract(ready_queue, earliest_arrival, object);
+	dyn_array_extract(ready_queue, prime_candidate_index, process);
 
 	return true;
 }
@@ -109,7 +109,7 @@ static bool select_next_arrival(dyn_array_t* ready_queue, unsigned long current_
 // \return: True if function ran successful, false otherwise
 bool first_come_first_serve(dyn_array_t* ready_queue, ScheduleResult_t* result) 
 {
-	return nonpreemptive_scheduler(ready_queue, result, select_next_arrival);
+	return nonpreemptive_scheduler(ready_queue, result, select_earliest_arrival);
 }
 
 bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
@@ -124,45 +124,45 @@ bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 // \param: current_time - The current simulated CPU time used to determine process eligibility
 // \param: object - A pointer to the destination where the extracted process block will be stored
 // \return: True if the extraction was successful, false otherwise
-static bool select_next_highest_priority(dyn_array_t* ready_queue, unsigned long current_time, void *const object)
+static bool select_highest_priority(dyn_array_t* ready_queue, unsigned long current_time, ProcessControlBlock_t* const process)
 {
 	// Validate input values
-	if (ready_queue == NULL || dyn_array_empty(ready_queue) || object == NULL) { return false; }
+	if (ready_queue == NULL || dyn_array_empty(ready_queue) || process == NULL) { return false; }
 	
 	// Find the process with the highest priority
-	size_t highest_priority = 0;
+	size_t prime_candidate_index = 0;
 	for (size_t i = 1; i < dyn_array_size(ready_queue); i++)
 	{
 		// Acquire two processes to compare and their whether they have arrived or not
-		ProcessControlBlock_t* highest_priority_process = dyn_array_at(ready_queue, highest_priority);
+		ProcessControlBlock_t* prime_candidate_process = dyn_array_at(ready_queue, prime_candidate_index);
 		ProcessControlBlock_t* candidate_process = dyn_array_at(ready_queue, i);
-		bool highest_priority_arrived = highest_priority_process->arrival <= current_time;
+		bool prime_candidate_arrived = prime_candidate_process->arrival <= current_time;
 		bool candidate_arrived = candidate_process->arrival <= current_time;
 		
 		// If both process have arrived determine which one has higher priority 
-		if (highest_priority_arrived && candidate_arrived)
+		if (prime_candidate_arrived && candidate_arrived)
 		{
-			if (highest_priority_process->priority > candidate_process->priority || 
-                (highest_priority_process->priority == candidate_process->priority && 
-                highest_priority_process->arrival > candidate_process->arrival))
+			if (prime_candidate_process->priority > candidate_process->priority || 
+                (prime_candidate_process->priority == candidate_process->priority && 
+                prime_candidate_process->arrival > candidate_process->arrival))
             {
-                highest_priority = i;
+                prime_candidate_index = i;
             }
 		}
 		// If neither have arrived determine which one has the earlier arrival time
-		else if (!highest_priority_arrived && !candidate_arrived && highest_priority_process->arrival > candidate_process->arrival)
+		else if (!prime_candidate_arrived && !candidate_arrived && prime_candidate_process->arrival > candidate_process->arrival)
 		{
-			highest_priority = i;
+			prime_candidate_index = i;
 		}
 		// If only one arrived then it gets priority
 		else if (candidate_arrived)
 		{
-			highest_priority = i;
+			prime_candidate_index = i;
 		}
 	}
 
 	// Store the selected process in the memory location provided
-	dyn_array_extract(ready_queue, highest_priority, object);
+	dyn_array_extract(ready_queue, prime_candidate_index, process);
 
 	return true;
 }
@@ -173,7 +173,7 @@ static bool select_next_highest_priority(dyn_array_t* ready_queue, unsigned long
 // \return: true if function ran successful else false for an error
 bool priority(dyn_array_t* ready_queue, ScheduleResult_t* result) 
 {
-	return nonpreemptive_scheduler(ready_queue, result, select_next_highest_priority);
+	return nonpreemptive_scheduler(ready_queue, result, select_highest_priority);
 }
 
 bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
@@ -184,11 +184,95 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 	return false;
 }
 
+static bool select_shortest_remaining_time(dyn_array_t* ready_queue, unsigned long current_time, ProcessControlBlock_t* const process)
+{
+	// Validate input values
+	if (ready_queue == NULL || dyn_array_empty(ready_queue) || process == NULL) { return false; }
+
+	size_t prime_candidate_index = 0;
+	for (size_t i = 1; i < dyn_array_size(ready_queue); i++)
+	{
+		ProcessControlBlock_t* prime_candidate_process = dyn_array_at(ready_queue, prime_candidate_index);
+		ProcessControlBlock_t* candidate_process = dyn_array_at(ready_queue, i);
+		bool prime_candidate_arrived = prime_candidate_process->arrival <= current_time;
+		bool candidate_arrived = candidate_process->arrival <= current_time;
+
+		if (prime_candidate_arrived && candidate_arrived)
+		{
+			if (prime_candidate_process->remaining_burst_time > candidate_process->remaining_burst_time || 
+                (prime_candidate_process->remaining_burst_time == candidate_process->remaining_burst_time && 
+                prime_candidate_process->arrival > candidate_process->arrival))
+            {
+                prime_candidate_index = i;
+            }
+		}
+		else if (!prime_candidate_arrived && !candidate_arrived)
+		{
+			if (prime_candidate_process->arrival > candidate_process->arrival)
+            {
+                prime_candidate_index = i;
+            }
+            else if (prime_candidate_process->arrival == candidate_process->arrival && 
+                     prime_candidate_process->remaining_burst_time > candidate_process->remaining_burst_time)
+            {
+                prime_candidate_index = i;
+            }
+		}
+		else if (candidate_arrived)
+		{
+			prime_candidate_index = i;
+		}
+	}
+
+	dyn_array_extract(ready_queue, prime_candidate_index, process);
+
+	return true;
+}
+
 bool shortest_remaining_time_first(dyn_array_t* ready_queue, ScheduleResult_t* result) 
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	// Validate input values
+	if (ready_queue == NULL || result == NULL) { return false; }
+	size_t process_count = dyn_array_size(ready_queue);
+	if (process_count == 0) { return false; }
+
+	// Create CPU variables
+	unsigned long current_time = 0;
+	unsigned long total_waiting = 0;
+	unsigned long total_turnaround = 0;
+
+	while (!dyn_array_empty(ready_queue))
+	{
+		ProcessControlBlock_t target_process;
+		if (!select_shortest_remaining_time(ready_queue, current_time, &target_process)) { return false; }
+
+		if (!target_process.started)
+		{
+			// Skip to the arrival time if needed
+			if (current_time < target_process.arrival) { current_time = target_process.arrival; }
+			else { total_waiting += current_time - target_process.arrival; }
+			target_process.started = true;
+		}
+		
+		virtual_cpu(&target_process);
+
+		for (size_t i = 0; i < dyn_array_size(ready_queue); i++)
+		{
+			ProcessControlBlock_t* process = dyn_array_at(ready_queue, i);
+			if (process->started) { total_waiting++; }
+		}
+
+		current_time++;
+
+		if (target_process.remaining_burst_time > 0) { dyn_array_push_back(ready_queue, &target_process); }
+		else { total_turnaround += current_time - target_process.arrival; }
+	}
+
+	result->average_waiting_time = (float)total_waiting / process_count;
+	result->average_turnaround_time = (float)total_turnaround / process_count;
+	result->total_run_time = current_time;
+
+	return true;
 }
 
 // Reads a specified number of bytes from an open file descriptor into a destination buffer.
