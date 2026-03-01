@@ -112,11 +112,72 @@ bool first_come_first_serve(dyn_array_t* ready_queue, ScheduleResult_t* result)
 	return nonpreemptive_scheduler(ready_queue, result, select_earliest_arrival);
 }
 
+// Extracts the process with the shortest burst from the queue.
+// \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
+// \param: current_time - The current simulated CPU time used to determine process eligibility
+// \param: object - A pointer to the destination where the extracted process block will be stored
+// \return: True if the extraction was successful, false otherwise
+static bool select_shortest_burst(dyn_array_t* ready_queue, unsigned long current_time, ProcessControlBlock_t* target)
+{
+	// Checks invalid parameters
+	if (ready_queue == NULL || target == NULL) 
+	{
+		 return false; 
+	}
+	// Gets number of processes
+	size_t num_processes = dyn_array_size(ready_queue); 
+	if(num_processes == 0)
+	{
+		return false;
+	}
+
+	int shortest_burst_index = -1;
+	uint32_t shortest_burst = UINT32_MAX;
+
+	// Iterate through each process looking for shortest burst
+	for(size_t i = 0; i < num_processes; i++ )
+	{
+		ProcessControlBlock_t *pcb = (ProcessControlBlock_t *)dyn_array_at(ready_queue, i);
+		if(!pcb)
+		{			
+			return false;
+		}
+		// Has process arrived and the shortest burst found
+		if(pcb->arrival <= current_time && pcb->remaining_burst_time < shortest_burst)
+		{
+			shortest_burst_index = i;
+			shortest_burst = pcb->remaining_burst_time;
+		}
+	}
+	// Process has yet to arrive
+	if(shortest_burst_index == -1)
+	{
+		uint32_t next_arrival = UINT32_MAX;		
+			for(size_t i = 0; i < num_processes; i++ )
+			{
+
+			ProcessControlBlock_t *pcb = (ProcessControlBlock_t *)dyn_array_at(ready_queue, i);	
+
+			if(pcb->arrival > current_time && pcb->arrival < next_arrival)
+			{
+				next_arrival = pcb->arrival;
+				shortest_burst_index = i;
+			}
+		}
+	}
+	if(shortest_burst_index != -1)
+	{
+		return dyn_array_extract(ready_queue, shortest_burst_index, target);
+	}
+	return false;
+}
+// Runs Shortest Job First algorithm
+// \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
+// \param: result - Result used for stat tracking
+// \return: True if function ran successful, false otherwise
 bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	return nonpreemptive_scheduler(ready_queue, result, select_shortest_burst);
 }
 
 // Extracts the highest priority process that is in the ready queue, or the earliest future process if the CPU is idle.

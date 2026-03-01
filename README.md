@@ -15,7 +15,7 @@ Add your scheduling algorithm analysis below this line in a readable format.
 | Scheduling Algorithm | Average Waiting Time | Average Turnaround Time | Total Run Time |
 |-----|-----|-----|-----|
 | `first_come_first_serve ` | `16.000000` | `28.500000` | `50` |
-| `shortest_job_first` | `NULL` | `NULL` | `NULL` |
+| `shortest_job_first` | `14.750000` | `27.250000` | `50` |
 | `priority` | `16.000000` | `28.500000` | `50` |
 | `round_robin` | `24.000000` | `36.500000` | `50` |
 | `shortest_remaining_time_first` | `11.750000` | `24.250000` | `50` |
