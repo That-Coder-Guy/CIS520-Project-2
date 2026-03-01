@@ -178,10 +178,104 @@ bool priority(dyn_array_t* ready_queue, ScheduleResult_t* result)
 
 bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	UNUSED(quantum);
-	return false;
+	if (!ready_queue || !result || quantum == 0) {
+		return false;
+	}
+
+	dyn_array_t *rr_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t), NULL);
+	if (!rr_queue) {
+		return false;
+	}
+
+	unsigned long current_time = 0;
+	unsigned long total_waiting = 0;
+	unsigned long total_turnaround = 0;
+	size_t num_processes = dyn_array_size(ready_queue);
+	if (num_processes == 0) {
+		return false;
+	}
+
+	// Represents pcb at i
+	ProcessControlBlock_t *pcb = malloc(sizeof(ProcessControlBlock_t));
+	if (!pcb) {
+		return false;
+	}
+
+	// Represents the pcb that we execute from rr_queue
+	ProcessControlBlock_t *round = malloc(sizeof(ProcessControlBlock_t));
+	if (!round) {
+		return false;
+	}
+
+	// Tracks how many processes are still in ready_queue
+	size_t i = 0;
+	// Tracks if we executed a pcb from rr_queue
+	bool flag = false;
+	// Continue until rr_queue is empty and every pcb has arrived
+	while (!dyn_array_empty(rr_queue) || i < num_processes) {
+		// Execute the front pcb in rr_queue
+		flag = false;
+		if (!dyn_array_empty(rr_queue)) {
+			flag = true;
+			dyn_array_extract_front(rr_queue, round);
+			size_t rr_size = dyn_array_size(rr_queue);
+			if (round->remaining_burst_time > quantum) {
+				for (size_t j = 0; j < quantum; j++) {
+					virtual_cpu(round);
+					current_time++;
+					// For every unit of time this pcb is executed, every other pcb
+					// in rr_queue waits that amount of time
+					total_waiting += rr_size;
+					// For every unit of time thsi pcb is executed, this pcb takes
+					// that amount of time to execute (Hence the +1) and every other pcb in rr_queue
+					// waits that amount of time
+					total_turnaround += rr_size + 1;
+				}
+			} else {
+				size_t remaining = round->remaining_burst_time;
+				for (size_t j = 0; j < remaining; j++) {
+					virtual_cpu(round);
+					current_time++;
+					// For every unit of time this pcb is executed, every other pcb
+					// in rr_queue waits that amount of time
+					total_waiting += rr_size;
+					// For every unit of time thsi pcb is executed, this pcb takes
+					// that amount of time to execute (Hence the +1) and every other pcb in rr_queue
+					// waits that amount of time
+					total_turnaround += rr_size + 1;
+				}
+			}
+		} // If no pcb can be executed, fast-forward time
+		else if (i < num_processes && ((ProcessControlBlock_t *)dyn_array_at(ready_queue, 0))->arrival > current_time) {
+			current_time = ((ProcessControlBlock_t *)dyn_array_at(ready_queue, 0))->arrival;
+		}
+
+		// Add all pcb's that are waiting to the back of rr_queue
+		while (i < num_processes && ((ProcessControlBlock_t *)dyn_array_at(ready_queue, 0))->arrival <= current_time) {
+			dyn_array_extract_front(ready_queue, pcb);
+			dyn_array_push_back(rr_queue, pcb);
+			// This pcb had to wait until after 'round' finished executing
+			total_waiting += current_time - pcb->arrival;
+			total_turnaround += current_time - pcb->arrival;
+			i++;
+		}
+		
+		// If the pcb we executed has not terminated, put it at the back of the queue
+		// Important that this happens after all pcb's that became available are loaded onto the queue
+		if (flag && round->remaining_burst_time > 0) {
+			dyn_array_push_back(rr_queue, round);
+		}
+	}
+
+	dyn_array_destroy(rr_queue);
+	free(pcb);
+	free(round);
+
+	result->average_waiting_time = (float)total_waiting / num_processes;
+	result->average_turnaround_time = (float)total_turnaround / num_processes;
+	result->total_run_time = current_time;
+
+	return true;
 }
 
 // Selects and extracts the process from the ready queue with the shortest remaining time.

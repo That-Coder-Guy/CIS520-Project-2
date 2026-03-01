@@ -386,6 +386,190 @@ TEST(shortest_remaining_time_first, LargeReadyQueueWithIdleTime) {
 }
 
 /*
+ * ROUND ROBIN UNIT TEST CASES
+*/
+TEST(RR, SingleProcessEqualToQuantum) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 1, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+	
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 0.0f, 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 5.0f, 0.01);
+	EXPECT_EQ(result.total_run_time, 5UL);
+	
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, SingleProcessShorterThanQuantum) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM - 3, .priority = 0, .arrival = 0, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 1, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 0.0f, 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 2.0f, 0.01);
+	EXPECT_EQ(result.total_run_time, 2UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, SingleProcessLongerThanQuantum) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM + 3, .priority = 0, .arrival = 0, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 1, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 0.0f, 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 8.0f, 0.01);
+	EXPECT_EQ(result.total_run_time, 8UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, SimpleSequentialArrivalEqualQuantum) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 1, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 2, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 3, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 4.0f, 0.1);
+	EXPECT_NEAR(result.average_turnaround_time, 9.0f, 0.1);
+	EXPECT_EQ(result.total_run_time, 15UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, SimpleSequentialArrivalVariableBurst) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM + 3, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 1, .started = false },
+		{ .remaining_burst_time = QUANTUM - 3, .priority = 0, .arrival = 2, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 3, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 6.33f, 0.1);
+	EXPECT_NEAR(result.average_turnaround_time, 11.33f, 0.1);
+	EXPECT_EQ(result.total_run_time, 15UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, LongIdleTime) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 20, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 2, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 0.0f, 0.1);
+	EXPECT_NEAR(result.average_turnaround_time, 5.0f, 0.1);
+	EXPECT_EQ(result.total_run_time, 25UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, SameTimeArivalEqualQuantum) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 3, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 5.0f, 0.1);
+	EXPECT_NEAR(result.average_turnaround_time, 10.0f, 0.1);
+	EXPECT_EQ(result.total_run_time, 15UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, SameTimeArivalVariableBurst) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM + 3, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = QUANTUM - 3, .priority = 0, .arrival = 0, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 3, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 7.33f, 0.1);
+	EXPECT_NEAR(result.average_turnaround_time, 12.33f, 0.1);
+	EXPECT_EQ(result.total_run_time, 15UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, LargeValidQueue) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = 13, .priority = 0, .arrival = 0, .started = false },
+		{ .remaining_burst_time = 13, .priority = 0, .arrival = 4, .started = false },
+		{ .remaining_burst_time = 16, .priority = 0, .arrival = 8, .started = false },
+		{ .remaining_burst_time = 11, .priority = 0, .arrival = 10, .started = false },
+		{ .remaining_burst_time = 12, .priority = 0, .arrival = 10, .started = false },
+		{ .remaining_burst_time = 11, .priority = 0, .arrival = 11, .started = false },
+		{ .remaining_burst_time = 11, .priority = 0, .arrival = 11, .started = false },
+		{ .remaining_burst_time = 13, .priority = 0, .arrival = 13, .started = false },		
+		{ .remaining_burst_time = 9, .priority = 0, .arrival = 16, .started = false },
+		{ .remaining_burst_time = 11, .priority = 0, .arrival = 18, .started = false }
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 10, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+	EXPECT_NEAR(result.average_waiting_time, 82.3f, 0.1);
+	EXPECT_NEAR(result.average_turnaround_time, 94.3f, 0.1);
+	EXPECT_EQ(result.total_run_time, 120UL);
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, NullReadyQueue) {
+	dyn_array_t *ready_queue = NULL;
+	ScheduleResult_t result;
+
+	EXPECT_FALSE(round_robin(ready_queue, &result, QUANTUM));
+}
+TEST(RR, EmptyReadyQueue) {
+	dyn_array_t *ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_FALSE(round_robin(ready_queue, &result, QUANTUM));
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, NullResult) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 1, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t *result = NULL;
+
+	EXPECT_FALSE(round_robin(ready_queue, result, QUANTUM));
+
+	dyn_array_destroy(ready_queue);
+}
+TEST(RR, ZeroQuantum) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
+	};
+	dyn_array_t *ready_queue = dyn_array_import(data, 1, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_FALSE(round_robin(ready_queue, &result, 0));
+
+	dyn_array_destroy(ready_queue);
+}
+
+/*
 *  LOAD PROCESS CONTROL BLOCKS UNIT TEST CASES
 **/
 TEST(load_process_control_blocks, NullFileName) {
