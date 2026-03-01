@@ -227,7 +227,7 @@ static bool select_highest_priority(dyn_array_t* ready_queue, unsigned long curr
 // Runs the non-preemptive Priority algorithm over the incoming ready_queue.
 // \param: ready_queue - a dyn_array of type ProcessControlBlock_t that contain be up to N elements
 // \param: result - used for shortest job first stat tracking \ref ScheduleResult_t
-// \return: true if function ran successful else false for an error
+// \return: True if function ran successful else false for an error
 bool priority(dyn_array_t* ready_queue, ScheduleResult_t* result) 
 {
 	return nonpreemptive_scheduler(ready_queue, result, select_highest_priority);
@@ -236,9 +236,9 @@ bool priority(dyn_array_t* ready_queue, ScheduleResult_t* result)
 // Runs round robin algorithm
 // \param: ready_queue - A dyn_array_t containing items of type ProcessControlBlock_t
 // \param: result - Struct used for stat tracking
-// \param: quantum: The quantum, or time slice, allocated to a pcb in each round
-// \return: Tur if the function ran successfully, false otherwise
-bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
+// \param: quantum - The quantum, or time slice, allocated to a pcb in each round
+// \return: True if the function ran successfully, false otherwise
+bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t* result, size_t quantum) 
 {
 	if (!ready_queue || !result || quantum == 0) {
 		return false;
@@ -337,7 +337,7 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 // \param: ready_queue - a pointer to the dynamic array containing the pool of processes
 // \param: current_time - the current simulation time used to evaluate if a process has arrived
 // \param: process - a pointer to the destination control block where the selected process data will be stored
-// \return: true - if a process was successfully selected and extracted, else false on error or empty queue
+// \return: True if a process was successfully selected and extracted, else false on error or empty queue
 static bool select_shortest_remaining_time(dyn_array_t* ready_queue, unsigned long current_time, ProcessControlBlock_t* const process)
 {
 	// Validate input values
@@ -392,7 +392,7 @@ static bool select_shortest_remaining_time(dyn_array_t* ready_queue, unsigned lo
 // Runs the preemptive Shortest Remaining Time First Process Scheduling algorithm over the incoming ready_queue
 // \param: ready_queue - a dyn_array of type ProcessControlBlock_t that contain be up to N elements
 // \param: result - used for shortest job first stat tracking \ref ScheduleResult_t
-// \return: true if function ran successful else false for an error
+// \return: True if function ran successful else false for an error
 // There is no guarantee that the passed dyn_array_t will be the result of your implementation of load_process_control_blocks
 bool shortest_remaining_time_first(dyn_array_t* ready_queue, ScheduleResult_t* result) 
 {
@@ -451,7 +451,7 @@ bool shortest_remaining_time_first(dyn_array_t* ready_queue, ScheduleResult_t* r
 // \param: fd - the open file descriptor to read from
 // \param: buffer - a pointer to the destination buffer where the data will be stored
 // \param: count - the number of bytes to read from the file
-// \return: true - if the requested number of bytes was successfully read, else false on error
+// \return: True if the requested number of bytes was successfully read, else false on error
 static bool read_file_bytes(int fd, void* buffer, size_t count)
 {
 	// Validate input values
@@ -481,7 +481,7 @@ static bool read_file_bytes(int fd, void* buffer, size_t count)
 // Reads the PCB values from the binary file into ProcessControlBlock_t
 // for N number of PCB entries stored in the file
 // \param: input_file - the file containing the PCB burst times
-// \return: a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
+// \return: A populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
 dyn_array_t* load_process_control_blocks(const char* input_file)
 {
 	// Validate input value
@@ -512,8 +512,6 @@ dyn_array_t* load_process_control_blocks(const char* input_file)
 				{
 					block->started = false;
 					dyn_array_push_back(control_blocks, block);
-					// dyn_array_push_back allocates memory to copy block into,
-					// which is a separate space of memory, so we have to free block
 					free(block);
 				}
 				else

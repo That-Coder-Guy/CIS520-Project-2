@@ -38,7 +38,7 @@ class GradeEnvironment : public testing::Environment
 /*
 *  FIRST COME FIRST SERVER UNIT TEST CASES
 **/
-TEST(FCFS, SingleProcess)
+TEST(first_come_first_serve, SingleProcess)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -61,7 +61,7 @@ TEST(FCFS, SingleProcess)
 	dyn_array_destroy(ready_queue);
 }
 
-TEST(FCFS, SimpleSequentialArrival)
+TEST(first_come_first_serve, SimpleSequentialArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -96,7 +96,7 @@ TEST(FCFS, SimpleSequentialArrival)
 	dyn_array_destroy(ready_queue);
 }
 
-TEST(FCFS, HandlesIdleTime)
+TEST(first_come_first_serve, HandlesIdleTime)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -126,7 +126,7 @@ TEST(FCFS, HandlesIdleTime)
 	dyn_array_destroy(ready_queue);
 }
 
-TEST(FCFS, EmptyQueue)
+TEST(first_come_first_serve, EmptyQueue)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 
@@ -139,7 +139,7 @@ TEST(FCFS, EmptyQueue)
 	dyn_array_destroy(ready_queue);
 }
 
-TEST(FCFS, SameTimeArrival)
+TEST(first_come_first_serve, SameTimeArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -174,7 +174,7 @@ TEST(FCFS, SameTimeArrival)
 	dyn_array_destroy(ready_queue);
 }
 
-TEST(FCFS, LargeGapBetweenArrival)
+TEST(first_come_first_serve, LargeGapBetweenArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -202,11 +202,11 @@ TEST(FCFS, LargeGapBetweenArrival)
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(FCFS, NullReadyQueue) {
+TEST(first_come_first_serve, NullReadyQueue) {
 	ScheduleResult_t result;
 	EXPECT_FALSE(first_come_first_serve(NULL, &result));
 }
-TEST(FCFS, NullScheduleResult) {
+TEST(first_come_first_serve, NullScheduleResult) {
 	
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -219,15 +219,16 @@ TEST(FCFS, NullScheduleResult) {
 
 	dyn_array_destroy(ready_queue);
 }
-/*
-* SJF Unit test cases
-*/
 
-TEST(SJF, NullReadyQueue) {
+/*
+* SHORTEST JOB FIRST UNIT TEST CASES
+*/
+TEST(shortest_job_first, NullReadyQueue) {
 	ScheduleResult_t result;
 	EXPECT_FALSE(shortest_job_first(NULL, &result));
 }
-TEST(SJF, NullScheduleResult) {
+
+TEST(shortest_job_first, NullScheduleResult) {
 	
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -240,7 +241,8 @@ TEST(SJF, NullScheduleResult) {
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(SJF, SingleProcess)
+
+TEST(shortest_job_first, SingleProcess)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -262,7 +264,8 @@ TEST(SJF, SingleProcess)
 
 		dyn_array_destroy(ready_queue);
 }
-TEST(SJF, AllProcessesArriveAtOnce)
+
+TEST(shortest_job_first, AllProcessesArriveAtOnce)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -297,7 +300,7 @@ TEST(SJF, AllProcessesArriveAtOnce)
 		dyn_array_destroy(ready_queue);
 }
 
-TEST(SJF, Sequential)
+TEST(shortest_job_first, Sequential)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -338,7 +341,7 @@ TEST(SJF, Sequential)
 		dyn_array_destroy(ready_queue);
 }
 
-TEST(SJF, LargeGapBetweenArrival)
+TEST(shortest_job_first, LargeGapBetweenArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -366,7 +369,8 @@ TEST(SJF, LargeGapBetweenArrival)
 
 		dyn_array_destroy(ready_queue);
 }
-TEST(SJF, EmptyQueue)
+
+TEST(shortest_job_first, EmptyQueue)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 
@@ -378,7 +382,8 @@ TEST(SJF, EmptyQueue)
 
 		dyn_array_destroy(ready_queue);
 }
-TEST(SJF, HandleTieBreakers)
+
+TEST(shortest_job_first, HandleTieBreakers)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
 	ProcessControlBlock_t p1;
@@ -412,6 +417,7 @@ TEST(SJF, HandleTieBreakers)
 
 		dyn_array_destroy(ready_queue);
 }
+
 /*
 *  PRIORITY UNIT TEST CASES
 **/
@@ -597,7 +603,7 @@ TEST(shortest_remaining_time_first, LargeReadyQueueWithIdleTime) {
 /*
  * ROUND ROBIN UNIT TEST CASES
 */
-TEST(RR, SingleProcessEqualToQuantum) {
+TEST(round_robin, SingleProcessEqualToQuantum) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false }
 	};
@@ -611,7 +617,8 @@ TEST(RR, SingleProcessEqualToQuantum) {
 	
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, SingleProcessShorterThanQuantum) {
+
+TEST(round_robin, SingleProcessShorterThanQuantum) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM - 3, .priority = 0, .arrival = 0, .started = false }
 	};
@@ -625,7 +632,8 @@ TEST(RR, SingleProcessShorterThanQuantum) {
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, SingleProcessLongerThanQuantum) {
+
+TEST(round_robin, SingleProcessLongerThanQuantum) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM + 3, .priority = 0, .arrival = 0, .started = false }
 	};
@@ -639,7 +647,8 @@ TEST(RR, SingleProcessLongerThanQuantum) {
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, SimpleSequentialArrivalEqualQuantum) {
+
+TEST(round_robin, SimpleSequentialArrivalEqualQuantum) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 1, .started = false },
@@ -649,13 +658,15 @@ TEST(RR, SimpleSequentialArrivalEqualQuantum) {
 	ScheduleResult_t result;
 
 	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+
 	EXPECT_NEAR(result.average_waiting_time, 4.0f, 0.1);
 	EXPECT_NEAR(result.average_turnaround_time, 9.0f, 0.1);
 	EXPECT_EQ(result.total_run_time, 15UL);
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, SimpleSequentialArrivalVariableBurst) {
+
+TEST(round_robin, SimpleSequentialArrivalVariableBurst) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM + 3, .priority = 0, .arrival = 0, .started = false },
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 1, .started = false },
@@ -665,13 +676,15 @@ TEST(RR, SimpleSequentialArrivalVariableBurst) {
 	ScheduleResult_t result;
 
 	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+
 	EXPECT_NEAR(result.average_waiting_time, 6.33f, 0.1);
 	EXPECT_NEAR(result.average_turnaround_time, 11.33f, 0.1);
 	EXPECT_EQ(result.total_run_time, 15UL);
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, LongIdleTime) {
+
+TEST(round_robin, LongIdleTime) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 20, .started = false }
@@ -680,13 +693,15 @@ TEST(RR, LongIdleTime) {
 	ScheduleResult_t result;
 
 	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+
 	EXPECT_NEAR(result.average_waiting_time, 0.0f, 0.1);
 	EXPECT_NEAR(result.average_turnaround_time, 5.0f, 0.1);
 	EXPECT_EQ(result.total_run_time, 25UL);
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, SameTimeArivalEqualQuantum) {
+
+TEST(round_robin, SameTimeArivalEqualQuantum) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
@@ -696,13 +711,15 @@ TEST(RR, SameTimeArivalEqualQuantum) {
 	ScheduleResult_t result;
 
 	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+
 	EXPECT_NEAR(result.average_waiting_time, 5.0f, 0.1);
 	EXPECT_NEAR(result.average_turnaround_time, 10.0f, 0.1);
 	EXPECT_EQ(result.total_run_time, 15UL);
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, SameTimeArivalVariableBurst) {
+
+TEST(round_robin, SameTimeArivalVariableBurst) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM + 3, .priority = 0, .arrival = 0, .started = false },
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
@@ -718,7 +735,8 @@ TEST(RR, SameTimeArivalVariableBurst) {
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, LargeValidQueue) {
+
+TEST(round_robin, LargeValidQueue) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = 13, .priority = 0, .arrival = 0, .started = false },
 		{ .remaining_burst_time = 13, .priority = 0, .arrival = 4, .started = false },
@@ -735,19 +753,22 @@ TEST(RR, LargeValidQueue) {
 	ScheduleResult_t result;
 
 	EXPECT_TRUE(round_robin(ready_queue, &result, QUANTUM));
+
 	EXPECT_NEAR(result.average_waiting_time, 82.3f, 0.1);
 	EXPECT_NEAR(result.average_turnaround_time, 94.3f, 0.1);
 	EXPECT_EQ(result.total_run_time, 120UL);
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, NullReadyQueue) {
+
+TEST(round_robin, NullReadyQueue) {
 	dyn_array_t *ready_queue = NULL;
 	ScheduleResult_t result;
 
 	EXPECT_FALSE(round_robin(ready_queue, &result, QUANTUM));
 }
-TEST(RR, EmptyReadyQueue) {
+
+TEST(round_robin, EmptyReadyQueue) {
 	dyn_array_t *ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t), NULL);
 	ScheduleResult_t result;
 
@@ -755,7 +776,8 @@ TEST(RR, EmptyReadyQueue) {
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, NullResult) {
+
+TEST(round_robin, NullResult) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
 	};
@@ -766,7 +788,8 @@ TEST(RR, NullResult) {
 
 	dyn_array_destroy(ready_queue);
 }
-TEST(RR, ZeroQuantum) {
+
+TEST(round_robin, ZeroQuantum) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = QUANTUM, .priority = 0, .arrival = 0, .started = false },
 	};
