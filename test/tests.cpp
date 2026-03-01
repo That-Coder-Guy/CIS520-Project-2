@@ -203,12 +203,12 @@ TEST(FCFS, LargeGapBetweenArrival)
 /*
 *  LOAD PROCESS CONTROL BLOCKS UNIT TEST CASES
 **/
-TEST (priority, NullReadyQueue) {
+TEST(priority, NullReadyQueue) {
 	ScheduleResult_t result;
 	EXPECT_FALSE(priority(NULL, &result));
 }
 
-TEST (priority, NullScheduleResult) {
+TEST(priority, NullScheduleResult) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = 10, .priority = 0, .arrival = 5, .started = false },
 		{ .remaining_burst_time = 10, .priority = 1, .arrival = 6, .started = false }
@@ -220,7 +220,17 @@ TEST (priority, NullScheduleResult) {
 	dyn_array_destroy(ready_queue);
 }
 
-TEST (priority, ValidReadyQueueData) {
+TEST(priority, EmptyReadyQueue)
+{
+	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
+	ScheduleResult_t result;
+
+	EXPECT_FALSE(first_come_first_serve(ready_queue, &result));
+
+	dyn_array_destroy(ready_queue);
+}
+
+TEST(priority, ValidReadyQueueData) {
 	ProcessControlBlock_t data[] = {
 		{ .remaining_burst_time = 5, .priority = 2, .arrival = 0, .started = false },
 		{ .remaining_burst_time = 3, .priority = 1, .arrival = 1, .started = false },
@@ -239,34 +249,76 @@ TEST (priority, ValidReadyQueueData) {
 	EXPECT_EQ(result.total_run_time, 17UL);
 }
 
+TEST(priority, IdenticalPriorityAndArrival) {
+    ProcessControlBlock_t data[] = {
+        { .remaining_burst_time = 4, .priority = 2, .arrival = 0, .started = false },
+        { .remaining_burst_time = 3, .priority = 1, .arrival = 2, .started = false },
+        { .remaining_burst_time = 3, .priority = 1, .arrival = 2, .started = false },
+        { .remaining_burst_time = 5, .priority = 0, .arrival = 3, .started = false }
+    };
+    dyn_array_t* ready_queue = dyn_array_import(data, 4, sizeof(ProcessControlBlock_t), NULL);
+    ScheduleResult_t result;
+
+    EXPECT_TRUE(priority(ready_queue, &result));
+
+    dyn_array_destroy(ready_queue);
+
+    EXPECT_NEAR(result.average_waiting_time, 4.5f, 0.01);
+    EXPECT_NEAR(result.average_turnaround_time, 8.25f, 0.01);
+    EXPECT_EQ(result.total_run_time, 15UL);
+}
+
+TEST(priority, LargeReadyQueue) {
+    ProcessControlBlock_t data[] = {
+        { .remaining_burst_time = 2, .priority = 3, .arrival = 0, .started = false },
+        { .remaining_burst_time = 3, .priority = 1, .arrival = 1, .started = false },
+        { .remaining_burst_time = 3, .priority = 1, .arrival = 1, .started = false },
+        { .remaining_burst_time = 4, .priority = 0, .arrival = 3, .started = false },
+        { .remaining_burst_time = 2, .priority = 2, .arrival = 5, .started = false },
+        { .remaining_burst_time = 2, .priority = 2, .arrival = 5, .started = false }, 
+        { .remaining_burst_time = 5, .priority = 4, .arrival = 8, .started = false },
+        { .remaining_burst_time = 5, .priority = 4, .arrival = 8, .started = false }
+    };
+    dyn_array_t* ready_queue = dyn_array_import(data, 8, sizeof(ProcessControlBlock_t), NULL);
+    ScheduleResult_t result;
+
+    EXPECT_TRUE(priority(ready_queue, &result));
+
+    dyn_array_destroy(ready_queue);
+
+    EXPECT_NEAR(result.average_waiting_time, 6.0f, 0.01);
+    EXPECT_NEAR(result.average_turnaround_time, 9.25f, 0.01);
+    EXPECT_EQ(result.total_run_time, 26UL);
+}
+
 /*
 *  LOAD PROCESS CONTROL BLOCKS UNIT TEST CASES
 **/
-TEST (load_process_control_blocks, NullFileName) {
+TEST(load_process_control_blocks, NullFileName) {
 	EXPECT_EQ(NULL, load_process_control_blocks(NULL));
 }
 
-TEST (load_process_control_blocks, EmptyFileName) {
+TEST(load_process_control_blocks, EmptyFileName) {
 	EXPECT_EQ(NULL, load_process_control_blocks(""));
 }
 
-TEST (load_process_control_blocks, InvalidFileName) {
+TEST(load_process_control_blocks, InvalidFileName) {
 	EXPECT_EQ(NULL, load_process_control_blocks("\n"));
 }
 
-TEST (load_process_control_blocks, NonExistentFileName) {
+TEST(load_process_control_blocks, NonExistentFileName) {
 	EXPECT_EQ(NULL, load_process_control_blocks("../test/fake.bin"));
 }
 
-TEST (load_process_control_blocks, InvalidSizeData) {
+TEST(load_process_control_blocks, InvalidSizeData) {
 	EXPECT_EQ(NULL, load_process_control_blocks("../test/invalid_size.bin"));
 }
 
-TEST (load_process_control_blocks, InvalidControlBlockData) {
+TEST(load_process_control_blocks, InvalidControlBlockData) {
 	EXPECT_EQ(NULL, load_process_control_blocks("../test/invalid_control_block.bin"));
 }
 
-TEST (load_process_control_blocks, ValidRead) {
+TEST(load_process_control_blocks, ValidRead) {
 	dyn_array_t* data = load_process_control_blocks("../test/valid.bin");
 	EXPECT_NE((dyn_array_t*)NULL, data);
 	EXPECT_EQ((size_t)4, dyn_array_size(data));
