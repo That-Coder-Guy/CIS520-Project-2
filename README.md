@@ -16,6 +16,6 @@ Add your scheduling algorithm analysis below this line in a readable format.
 |-----|-----|-----|-----|
 | `first_come_first_serve ` | `16.000000` | `28.500000` | `50` |
 | `shortest_job_first` | `NULL` | `NULL` | `NULL` |
-| `priority` | `NULL` | `NULL` | `NULL` |
+| `priority` | `16.000000` | `28.500000` | `50` |
 | `round_robin` | `NULL` | `NULL` | `NULL` |
-| `shortest_remaining_time_first` | `NULL` | `NULL` | `NULL` |
+| `shortest_remaining_time_first` | `11.750000` | `24.250000` | `50` |
