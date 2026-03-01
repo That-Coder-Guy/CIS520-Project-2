@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
 	// Allocate storage for the schedule algorithm result
 	ScheduleResult_t* result = malloc(sizeof(ScheduleResult_t));
-	if (result == NULL) { return EXIT_FAILURE; }
+	if (result == NULL) { dyn_array_destroy(schedule); return EXIT_FAILURE; }
 
 	// Call the correct scheduling algorithm on the provided file schedule data
 	static const int MAX_ALGORITHM_NAME_LENGTH = 5;
@@ -87,6 +87,9 @@ int main(int argc, char **argv)
 		printf("Average Turnaround Time: %f\n", result->average_turnaround_time);
 		printf("Total Run Time:\t\t %ld\n", result->total_run_time);
 	}
+
+	dyn_array_destroy(schedule);
+	free(result);
 
 	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

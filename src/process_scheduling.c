@@ -192,18 +192,22 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 	unsigned long total_turnaround = 0;
 	size_t num_processes = dyn_array_size(ready_queue);
 	if (num_processes == 0) {
+		dyn_array_destroy(rr_queue);
 		return false;
 	}
 
 	// Represents pcb at i
 	ProcessControlBlock_t *pcb = malloc(sizeof(ProcessControlBlock_t));
 	if (!pcb) {
+		dyn_array_destroy(rr_queue);
 		return false;
 	}
 
 	// Represents the pcb that we execute from rr_queue
 	ProcessControlBlock_t *round = malloc(sizeof(ProcessControlBlock_t));
 	if (!round) {
+		dyn_array_destroy(rr_queue);
+		free(pcb);
 		return false;
 	}
 
@@ -457,10 +461,14 @@ dyn_array_t* load_process_control_blocks(const char* input_file)
 				{
 					block->started = false;
 					dyn_array_push_back(control_blocks, block);
+					// dyn_array_push_back allocates memory to copy block into,
+					// which is a separate space of memory, so we have to free block
+					free(block);
 				}
 				else
 				{
 					dyn_array_destroy(control_blocks);
+					free(block);
 					control_blocks = NULL;
 					break;
 				}
