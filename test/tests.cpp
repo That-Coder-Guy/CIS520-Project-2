@@ -834,6 +834,8 @@ TEST(load_process_control_blocks, ValidRead) {
 	EXPECT_EQ((uint32_t)0, block4->priority);
 	EXPECT_EQ((uint32_t)3, block4->arrival);
 	EXPECT_EQ(false, block4->started);
+
+	dyn_array_destroy(data);
 }
 
 int main(int argc, char **argv)
