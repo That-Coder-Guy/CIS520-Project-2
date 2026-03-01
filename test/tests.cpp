@@ -34,6 +34,7 @@ class GradeEnvironment : public testing::Environment
 		}
 };
 */
+
 TEST(FCFS, SingleProcess)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -49,13 +50,14 @@ TEST(FCFS, SingleProcess)
 
 	bool success = first_come_first_serve(ready_queue, &result);
 
-		EXPECT_TRUE(success);
-		EXPECT_NEAR(result.average_waiting_time, 0.0f , 0.01);
-		EXPECT_NEAR(result.average_turnaround_time, 3.0f , 0.01);
-		EXPECT_EQ(result.total_run_time, 3UL);
+	EXPECT_TRUE(success);
+	EXPECT_NEAR(result.average_waiting_time, 0.0f , 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 3.0f , 0.01);
+	EXPECT_EQ(result.total_run_time, 3UL);
 
-		dyn_array_destroy(ready_queue);
+	dyn_array_destroy(ready_queue);
 }
+
 TEST(FCFS, SimpleSequentialArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -83,13 +85,14 @@ TEST(FCFS, SimpleSequentialArrival)
 
 	bool success = first_come_first_serve(ready_queue, &result);
 
-		EXPECT_TRUE(success);
-		EXPECT_NEAR(result.average_waiting_time, 3.33f , 0.01);
-		EXPECT_NEAR(result.average_turnaround_time, 6.67f , 0.01);
-		EXPECT_EQ(result.total_run_time, 10UL);
+	EXPECT_TRUE(success);
+	EXPECT_NEAR(result.average_waiting_time, 3.33f , 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 6.67f , 0.01);
+	EXPECT_EQ(result.total_run_time, 10UL);
 
-		dyn_array_destroy(ready_queue);
+	dyn_array_destroy(ready_queue);
 }
+
 TEST(FCFS, HandlesIdleTime)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -112,13 +115,14 @@ TEST(FCFS, HandlesIdleTime)
 
 	bool success = first_come_first_serve(ready_queue, &result);
 
-		EXPECT_TRUE(success);
-		EXPECT_NEAR(result.average_waiting_time, 0.0f , 0.01);
-		EXPECT_NEAR(result.average_turnaround_time, 3.5f , 0.01);
-		EXPECT_EQ(result.total_run_time, 9UL);
+	EXPECT_TRUE(success);
+	EXPECT_NEAR(result.average_waiting_time, 0.0f , 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 3.5f , 0.01);
+	EXPECT_EQ(result.total_run_time, 9UL);
 
-		dyn_array_destroy(ready_queue);
+	dyn_array_destroy(ready_queue);
 }
+
 TEST(FCFS, EmptyQueue)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -127,10 +131,11 @@ TEST(FCFS, EmptyQueue)
 
 	bool success = first_come_first_serve(ready_queue, &result);
 
-		EXPECT_FALSE(success);
+	EXPECT_FALSE(success);
 
-		dyn_array_destroy(ready_queue);
+	dyn_array_destroy(ready_queue);
 }
+
 TEST(FCFS, SameTimeArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -158,13 +163,14 @@ TEST(FCFS, SameTimeArrival)
 
 	bool success = first_come_first_serve(ready_queue, &result);
 
-		EXPECT_TRUE(success);
-		EXPECT_NEAR(result.average_waiting_time, 3.67f , 0.01);
-		EXPECT_NEAR(result.average_turnaround_time, 7.0f , 0.01);
-		EXPECT_EQ(result.total_run_time, 10UL);
+	EXPECT_TRUE(success);
+	EXPECT_NEAR(result.average_waiting_time, 3.67f , 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 7.0f , 0.01);
+	EXPECT_EQ(result.total_run_time, 10UL);
 
-		dyn_array_destroy(ready_queue);
+	dyn_array_destroy(ready_queue);
 }
+
 TEST(FCFS, LargeGapBetweenArrival)
 {
 	dyn_array_t* ready_queue = dyn_array_create(0, sizeof(ProcessControlBlock_t) , NULL);
@@ -186,13 +192,53 @@ TEST(FCFS, LargeGapBetweenArrival)
 
 	bool success = first_come_first_serve(ready_queue, &result);
 
-		EXPECT_TRUE(success);
-		EXPECT_NEAR(result.average_waiting_time, 0.0f , 0.01);
-		EXPECT_NEAR(result.average_turnaround_time, 4.0f , 0.01);
-		EXPECT_EQ(result.total_run_time, 103UL);
+	EXPECT_TRUE(success);
+	EXPECT_NEAR(result.average_waiting_time, 0.0f , 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 4.0f , 0.01);
+	EXPECT_EQ(result.total_run_time, 103UL);
 
-		dyn_array_destroy(ready_queue);
+	dyn_array_destroy(ready_queue);
 }
+
+/*
+*  LOAD PROCESS CONTROL BLOCKS UNIT TEST CASES
+**/
+TEST (priority, NullReadyQueue) {
+	ScheduleResult_t result;
+	EXPECT_FALSE(priority(NULL, &result));
+}
+
+TEST (priority, NullScheduleResult) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = 10, .priority = 0, .arrival = 5, .started = false },
+		{ .remaining_burst_time = 10, .priority = 1, .arrival = 6, .started = false }
+	};
+	dyn_array_t* ready_queue = dyn_array_import(data, 2, sizeof(ProcessControlBlock_t), NULL);
+
+	EXPECT_FALSE(priority(ready_queue, NULL));
+
+	dyn_array_destroy(ready_queue);
+}
+
+TEST (priority, ValidReadyQueueData) {
+	ProcessControlBlock_t data[] = {
+		{ .remaining_burst_time = 5, .priority = 2, .arrival = 0, .started = false },
+		{ .remaining_burst_time = 3, .priority = 1, .arrival = 1, .started = false },
+		{ .remaining_burst_time = 4, .priority = 1, .arrival = 2, .started = false },
+		{ .remaining_burst_time = 2, .priority = 0, .arrival = 15, .started = false }
+	};
+	dyn_array_t* ready_queue = dyn_array_import(data, 4, sizeof(ProcessControlBlock_t), NULL);
+	ScheduleResult_t result;
+
+	EXPECT_TRUE(priority(ready_queue, &result));
+
+	dyn_array_destroy(ready_queue);
+
+	EXPECT_NEAR(result.average_waiting_time, 2.5f , 0.01);
+	EXPECT_NEAR(result.average_turnaround_time, 6.0f , 0.01);
+	EXPECT_EQ(result.total_run_time, 17UL);
+}
+
 /*
 *  LOAD PROCESS CONTROL BLOCKS UNIT TEST CASES
 **/

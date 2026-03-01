@@ -19,67 +19,97 @@ void virtual_cpu(ProcessControlBlock_t *process_control_block)
 	--process_control_block->remaining_burst_time;
 }
 
-// Runs First Come First Served algorithm
-// param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
-// param: result - Result used for stat tracking
-// return: True if function ran successful, false otherwise
-bool first_come_first_serve(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+// Defines a function pointer type for non-preemptive CPU scheduler algorithms that select and extract the next
+// process to run from the ready queue
+// \param: ready_queue - A dyn_array containing the pool of available processes
+// \param: current_time - The current simulated CPU time used to determine process eligibility
+// \param: object - A pointer to the destination where the extracted process block will be stored
+// \return: True if a process was successfully selected and extracted, false otherwise
+typedef bool (*process_selector_function_t)(dyn_array_t* ready_queue, unsigned long current_time, void *const object);
+
+// Simulates a non-preemptive CPU scheduler by executing processes from the ready queue to completion using a provided selection algorithm
+// \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing the processes to be scheduled
+// \param: result - A pointer to a ScheduleResult_t structure where the calculated scheduling statistics will be stored
+// \param: selector - A function pointer used to extract the next process from the ready queue based on a specific scheduling algorithm
+// \return: True if the scheduling simulation completed successfully, false otherwise
+static bool nonpreemptive_scheduler(dyn_array_t* ready_queue, ScheduleResult_t* result, process_selector_function_t selector)
 {
-	// Checks invalid parameters
-	if(ready_queue == NULL || !result) 
-	{
-		return false;
-	}
-	// gets number of processes
-	size_t num_processes = dyn_array_size(ready_queue); 
-	if(num_processes == 0)
-	{
-		return false;
-	}
+	// Validate input values
+	if (ready_queue == NULL || result == NULL) { return false; }
+	size_t process_count = dyn_array_size(ready_queue);
+	if (process_count == 0) { return false; }
+
+	// Create CPU variables
 	unsigned long current_time = 0;
 	unsigned long total_waiting = 0;
 	unsigned long total_turnaround = 0;
-	
-	// For each process to go through
-	for(size_t i = 0; i < num_processes; i++)
+
+	// Loop until the ready queue has been emptied
+	while (!dyn_array_empty(ready_queue))
 	{
-			
-		ProcessControlBlock_t *pcb = (ProcessControlBlock_t *)dyn_array_at(ready_queue, i);
-		if (!pcb) 
+		// Select the next process to run
+		ProcessControlBlock_t process;
+		if (!selector(ready_queue, current_time, &process)) { return false; }
+
+		// Skip to the arrival time if needed
+		if (current_time < process.arrival) { current_time = process.arrival; }
+		else { total_waiting += current_time - process.arrival; }
+
+		// If a process was found then run it to completion
+		while (process.remaining_burst_time > 0)
 		{
-			return false;
-		}
-		
-		// Iterates through time until process arrives
-		if (current_time < pcb->arrival) 
-		{
-			current_time = pcb->arrival;
-		}
-		
-		// Time spent in queue until process started
-		unsigned long waiting_time = current_time - pcb->arrival;
-		total_waiting += waiting_time;
-		
-		// Process has started
-		pcb->started = true;
-		
-		// Execute process until completion
-		while (pcb->remaining_burst_time > 0) 
-		{
-			virtual_cpu(pcb);  // Decrement remaining burst time by 1
+			virtual_cpu(&process);
 			current_time++;
 		}
-		
-		// Calculate time from arrival to completion
-		unsigned long turnaround_time = current_time - pcb->arrival;
-		total_turnaround += turnaround_time;
+		total_turnaround += current_time - process.arrival;
 	}
-	
-	result->average_waiting_time = (float)total_waiting / num_processes;
-	result->average_turnaround_time = (float)total_turnaround / num_processes;
+
+	// Set the result values
+	result->average_waiting_time = (float)total_waiting / process_count;
+	result->average_turnaround_time = (float)total_turnaround / process_count;
 	result->total_run_time = current_time;
+	
+	return true;
+}
+
+// Extracts the process with the earliest arrival time from the queue
+// \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
+// \param: current_time - The current simulated CPU time used to determine process eligibility
+// \param: object - A pointer to the destination where the extracted process block will be stored
+// \return: True if the extraction was successful, false otherwise
+static bool select_next_arrival(dyn_array_t* ready_queue, unsigned long current_time, void *const object)
+{
+	// Mark current_time as intentionally unused for the compiler
+	(void)current_time;
+
+	// Validate input values
+	if (ready_queue == NULL || dyn_array_empty(ready_queue) || object == NULL) { return false; }
+	
+	// Find the process with the earliest arrival time
+	size_t earliest_arrival = 0;
+	for (size_t i = 1; i < dyn_array_size(ready_queue); i++)
+	{
+		ProcessControlBlock_t* eariest_process = dyn_array_at(ready_queue, earliest_arrival);
+		ProcessControlBlock_t* candidate_process = dyn_array_at(ready_queue, i);
+		if (eariest_process->arrival > candidate_process->arrival)
+		{
+			earliest_arrival = i;
+		}
+	}
+
+	// Store the selected process in the memory location provided
+	dyn_array_extract(ready_queue, earliest_arrival, object);
 
 	return true;
+}
+
+// Runs First Come First Served algorithm
+// \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
+// \param: result - Result used for stat tracking
+// \return: True if function ran successful, false otherwise
+bool first_come_first_serve(dyn_array_t* ready_queue, ScheduleResult_t* result) 
+{
+	return nonpreemptive_scheduler(ready_queue, result, select_next_arrival);
 }
 
 bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
@@ -89,11 +119,61 @@ bool shortest_job_first(dyn_array_t *ready_queue, ScheduleResult_t *result)
 	return false;
 }
 
-bool priority(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+// Extracts the highest priority process that is in the ready queue, or the earliest future process if the CPU is idle
+// \param: ready_queue - A dyn_array of type ProcessControlBlock_t containing up to N elements
+// \param: current_time - The current simulated CPU time used to determine process eligibility
+// \param: object - A pointer to the destination where the extracted process block will be stored
+// \return: True if the extraction was successful, false otherwise
+static bool select_next_highest_priority(dyn_array_t* ready_queue, unsigned long current_time, void *const object)
 {
-	UNUSED(ready_queue);
-	UNUSED(result);
-	return false;
+	// Validate input values
+	if (ready_queue == NULL || dyn_array_empty(ready_queue) || object == NULL) { return false; }
+	
+	// Find the process with the highest priority
+	size_t highest_priority = 0;
+	for (size_t i = 1; i < dyn_array_size(ready_queue); i++)
+	{
+		// Acquire two processes to compare and their whether they have arrived or not
+		ProcessControlBlock_t* highest_priority_process = dyn_array_at(ready_queue, highest_priority);
+		ProcessControlBlock_t* candidate_process = dyn_array_at(ready_queue, i);
+		bool highest_priority_arrived = highest_priority_process->arrival <= current_time;
+		bool candidate_arrived = candidate_process->arrival <= current_time;
+		
+		// If both process have arrived determine which one has higher priority 
+		if (highest_priority_arrived && candidate_arrived)
+		{
+			if (highest_priority_process->priority > candidate_process->priority || 
+                (highest_priority_process->priority == candidate_process->priority && 
+                highest_priority_process->arrival > candidate_process->arrival))
+            {
+                highest_priority = i;
+            }
+		}
+		// If neither have arrived determine which one has the earlier arrival time
+		else if (!highest_priority_arrived && !candidate_arrived && highest_priority_process->arrival > candidate_process->arrival)
+		{
+			highest_priority = i;
+		}
+		// If only one arrived then it gets priority
+		else if (candidate_arrived)
+		{
+			highest_priority = i;
+		}
+	}
+
+	// Store the selected process in the memory location provided
+	dyn_array_extract(ready_queue, highest_priority, object);
+
+	return true;
+}
+
+// Runs the non-preemptive Priority algorithm over the incoming ready_queue
+// \param: ready - queue a dyn_array of type ProcessControlBlock_t that contain be up to N elements
+// \param: result - used for shortest job first stat tracking \ref ScheduleResult_t
+// \return: true if function ran successful else false for an error
+bool priority(dyn_array_t* ready_queue, ScheduleResult_t* result) 
+{
+	return nonpreemptive_scheduler(ready_queue, result, select_next_highest_priority);
 }
 
 bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
@@ -104,7 +184,7 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 	return false;
 }
 
-bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *result) 
+bool shortest_remaining_time_first(dyn_array_t* ready_queue, ScheduleResult_t* result) 
 {
 	UNUSED(ready_queue);
 	UNUSED(result);
@@ -112,10 +192,10 @@ bool shortest_remaining_time_first(dyn_array_t *ready_queue, ScheduleResult_t *r
 }
 
 // Reads a specified number of bytes from an open file descriptor into a destination buffer.
-// \param fd the open file descriptor to read from
-// \param buffer a pointer to the destination buffer where the data will be stored
-// \param count the number of bytes to read from the file
-// \return true if the requested number of bytes was successfully read, else false on error
+// \param: fd - the open file descriptor to read from
+// \param: buffer - a pointer to the destination buffer where the data will be stored
+// \param: count - the number of bytes to read from the file
+// \return: true - if the requested number of bytes was successfully read, else false on error
 static bool read_file_bytes(int fd, void* buffer, size_t count)
 {
 	// Validate input values
@@ -144,8 +224,8 @@ static bool read_file_bytes(int fd, void* buffer, size_t count)
 
 // Reads the PCB values from the binary file into ProcessControlBlock_t
 // for N number of PCB entries stored in the file
-// \param input_file the file containing the PCB burst times
-// \return a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
+// \param: input_file - the file containing the PCB burst times
+// \return: a populated dyn_array of ProcessControlBlocks if function ran successful else NULL for an error
 dyn_array_t* load_process_control_blocks(const char* input_file)
 {
 	// Validate input value
