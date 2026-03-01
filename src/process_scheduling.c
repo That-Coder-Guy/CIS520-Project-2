@@ -237,6 +237,11 @@ bool priority(dyn_array_t* ready_queue, ScheduleResult_t* result)
 	return nonpreemptive_scheduler(ready_queue, result, select_highest_priority);
 }
 
+// Runs round robin algorithm
+// \param: ready_queue - A dyn_array_t containing items of type ProcessControlBlock_t
+// \param: result - Struct used for stat tracking
+// \param: quantum: The quantum, or time slice, allocated to a pcb in each round
+// \return: Tur if the function ran successfully, false otherwise
 bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quantum) 
 {
 	if (!ready_queue || !result || quantum == 0) {
@@ -284,30 +289,19 @@ bool round_robin(dyn_array_t *ready_queue, ScheduleResult_t *result, size_t quan
 			flag = true;
 			dyn_array_extract_front(rr_queue, round);
 			size_t rr_size = dyn_array_size(rr_queue);
-			if (round->remaining_burst_time > quantum) {
-				for (size_t j = 0; j < quantum; j++) {
-					virtual_cpu(round);
-					current_time++;
-					// For every unit of time this pcb is executed, every other pcb
-					// in rr_queue waits that amount of time
-					total_waiting += rr_size;
-					// For every unit of time thsi pcb is executed, this pcb takes
-					// that amount of time to execute (Hence the +1) and every other pcb in rr_queue
-					// waits that amount of time
-					total_turnaround += rr_size + 1;
-				}
-			} else {
-				size_t remaining = round->remaining_burst_time;
-				for (size_t j = 0; j < remaining; j++) {
-					virtual_cpu(round);
-					current_time++;
-					// For every unit of time this pcb is executed, every other pcb
-					// in rr_queue waits that amount of time
-					total_waiting += rr_size;
-					// For every unit of time thsi pcb is executed, this pcb takes
-					// that amount of time to execute (Hence the +1) and every other pcb in rr_queue
-					// waits that amount of time
-					total_turnaround += rr_size + 1;
+			// Execute this pcb for the time quantum, or until it terminates
+			for (size_t j = 0; j < quantum; j++) {
+				virtual_cpu(round);
+				current_time++;
+				// For every unit of time this pcb is executed, every other pcb
+				// in rr_queue waits that amount of time
+				total_waiting += rr_size;
+				// For every unit of time thsi pcb is executed, this pcb takes
+				// that amount of time to execute (Hence the +1) and every other pcb in rr_queue
+				// waits that amount of time
+				total_turnaround += rr_size + 1;
+				if (round->remaining_burst_time <= 0) {
+					break;
 				}
 			}
 		} // If no pcb can be executed, fast-forward time
